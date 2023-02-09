@@ -21,7 +21,7 @@ namespace ConsoleAppN2TVmConverterH5
         /// </summary>
         /// <param name="vmFileContents"></param>
         /// <param name="pathToPlaceFile">the location to put the new file</param>
-        public void WriteHackFile(List<string> vmFileContents, string pathToPlaceFile)
+        public void WriteAsmFile(List<string> vmFileContents, string pathToPlaceFile)
         {
             using (StreamWriter streamWriter = new StreamWriter(pathToPlaceFile))
             {
