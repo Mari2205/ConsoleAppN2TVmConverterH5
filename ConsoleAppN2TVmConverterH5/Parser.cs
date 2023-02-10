@@ -27,7 +27,7 @@ namespace ConsoleAppN2TVmConverterH5
 
             foreach (var line in file)
             {
-                if (line.Contains("push"))
+                if (line.Contains("push") && line.Contains("constant"))
                 {
                     if (needLable)
                     {
@@ -64,7 +64,9 @@ namespace ConsoleAppN2TVmConverterH5
                 else if (line.Contains("sub"))
                 {
                     var sub = Sub();
-                    output.AddRange(sub);
+                    var subStatic = subWOutD0();
+                    //output.AddRange(sub);
+                    output.AddRange(subStatic);
                 }
                 else if (line.Contains("neg"))
                 {
@@ -86,6 +88,46 @@ namespace ConsoleAppN2TVmConverterH5
                     var not = Not();
                     output.AddRange(not);
                 }
+                else if (line.Contains("pop") && line.Contains("static"))
+                {
+                    var pop = PopStatic(line);
+                    output.AddRange(pop);
+                }
+                else if (line.Contains("push") && line.Contains("static"))
+                {
+                    var pushStatic = PushStatic(line);
+                    output.AddRange(pushStatic);
+                }
+                else if (line.Contains("pop") && line.Contains("pointer"))
+                {
+                    var popPointer = PopPointer(line);
+                    output.AddRange(popPointer);
+                }
+                else if (line.Contains("pop") && line.Contains("this"))
+                {
+                    var popThis = PopThis(line);
+                    output.AddRange(popThis);
+                }
+                else if (line.Contains("pop") && line.Contains("that"))
+                {
+                    var popThat = PopThat(line);
+                    output.AddRange(popThat);
+                }
+                else if (line.Contains("push") && line.Contains("pointer"))
+                {
+                    var pushPointer = PushPointer(line);
+                    output.AddRange(pushPointer);
+                }
+                else if (line.Contains("push") && line.Contains("this"))
+                {
+                    var pushThis = PushThis(line);
+                    output.AddRange(pushThis);
+                }
+                else if (line.Contains("push") && line.Contains("that"))
+                {
+                    var pushThat = PushThat(line);
+                    output.AddRange(pushThat);
+                }
                 else
                 {
                     output.Add(line);
@@ -103,7 +145,9 @@ namespace ConsoleAppN2TVmConverterH5
 
             FileHandler fileHandler = new FileHandler();
             //var fileContent = fileHandler.ReadVmFile(folderPathToSA + @"\SimpleAdd\SimpleAdd.vm");
-            var fileContent = fileHandler.ReadVmFile(folderPathToSA + @"\StackTest\StackTest.vm");
+            //var fileContent = fileHandler.ReadVmFile(folderPathToSA + @"\StackTest\StackTest.vm");
+            //var fileContent = fileHandler.ReadVmFile(folderPathToMA + @"\StaticTest\StaticTest.vm");
+            var fileContent = fileHandler.ReadVmFile(folderPathToMA + @"\PointerTest\PointerTest.vm");
 
             return fileContent;
         }
@@ -113,7 +157,7 @@ namespace ConsoleAppN2TVmConverterH5
             const string basePath = @"C:\Users\uncha\Desktop\";
 
             FileHandler fileHandler = new FileHandler();
-            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyStackTest.asm");
+            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyStaticTest.asm");
         }
 
         /// <summary>
@@ -441,6 +485,361 @@ namespace ConsoleAppN2TVmConverterH5
             #endregion
         }
 
+
+        private const int staticBaseLocation = 16;
+
+        private List<string> PopStatic(string command)
+        {
+            List<string> result = new List<string>();
+
+            const string stackPointer = "@SP";
+            int staticMemLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            var memLoccation = staticBaseLocation + staticMemLocation;
+
+            result.Add("@" + memLoccation);
+            result.Add("D=A");
+            result.Add("@R13");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("@R13");
+            result.Add("A=M");
+            result.Add("M=D");
+
+            return result;
+            #region asm pop static example
+            /*
+             * // Pop static 8
+             * @24
+             * D=A
+             * @R13
+             * M=D
+             * @SP
+             * AM=M-1
+             * D=M
+             * @R13
+             * A=M
+             * M=D
+             */
+            #endregion
+
+        }
+
+        // TODO: PushStatic og PushConstant er næsten ens
+        private List<string> PushStatic(string command)
+        {
+            List<string> result = new List<string>();
+
+            const string stackPointer = "@SP";
+            //var staticMemLocation = Regex.Replace(command, @"[^\d]", String.Empty);
+            int staticMemLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            var memLoccation = staticBaseLocation + staticMemLocation;
+
+            result.Add("@" + memLoccation);
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D"); 
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+
+
+            return result;
+            #region asm pop static example
+            /*
+             * // Push static 3
+             * @19
+             * D=M
+             * @SP
+             * A=M
+             * M=D
+             * @SP
+             * M=M+1
+             */
+            #endregion
+
+        }
+
+        // TODO: sub ask mikkle hvorfor D=0
+        private List<string> subWOutD0()
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            result.Add(stackPointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("A=A-1");
+            result.Add("M=M-D");
+
+            return result;
+            #region Asm Sub form staticTest.asm example
+            /*
+             * // sub
+             * @SP
+             * AM=M-1
+             * D=M
+             * A=A-1
+             * M=M-D
+             */
+            #endregion
+        }
+
+        private List<string> PopPointer(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+
+            if (memLocation.Equals(0))
+            {
+                result.Add("@THIS");
+            }
+            else
+            {
+                result.Add("@THAT");
+            }
+            
+            result.Add("D=A");
+            result.Add("@R13");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("@R13");
+            result.Add("A=M");
+            result.Add("M=D");
+
+            return result;
+            #region Asm pop pointer
+            /*
+             * // Pop pointer 0
+             * @THIS
+             * D=A
+             * @R13
+             * M=D
+             * @SP
+             * AM=M-1
+             * D=M
+             * @R13
+             * A=M
+             * M=D
+             */
+            #endregion
+        }
+
+        private List<string> PopThis(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+
+            result.Add("@THIS");
+            result.Add("D=M");
+            result.Add("@" + memLocation);
+            result.Add("D=D+A");
+            result.Add("@R13");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("@R13");
+            result.Add("A=M");
+            result.Add("M=D");
+
+            return result;
+            #region Asm pop this 2
+            /*
+             * // Pop this 2
+             * @THIS
+             * D=M
+             * @2
+             * D=D+A
+             * @R13
+             * M=D
+             * @SP
+             * AM=M-1
+             * D=M
+             * @R13
+             * A=M
+             * M=D
+             */
+            #endregion
+        }
+
+        private List<string> PopThat(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+
+            result.Add("@THAT");
+            result.Add("D=M");
+            result.Add("@" + memLocation);
+            result.Add("D=D+A");
+            result.Add("@R13");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("@R13");
+            result.Add("A=M");
+            result.Add("M=D");
+
+            return result;
+            #region Asm pop that
+            /*
+             * // Pop that 6
+             * @THAT
+             * D=M
+             * @6
+             * D=D+A
+             * @R13
+             * M=D
+             * @SP
+             * AM=M-1
+             * D=M
+             * @R13
+             * A=M
+             * M=D
+             */
+            #endregion
+        }
+
+        private List<string> PushPointer(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            //var memLoccation = staticBaseLocation + staticMemLocation;
+
+            if (memLocation.Equals(0))
+            {
+                result.Add("@THIS");
+            }
+            else
+            {
+                result.Add("@THAT");
+            }
+
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+
+            return result;
+            #region Asm push pointer
+            /*
+             * // Push pointer 0
+             * @THIS
+             * D=M
+             * @SP
+             * A=M
+             * M=D
+             * @SP
+             * M=M+1
+             */
+            #endregion
+        }
+
+        private List<string> PushThis(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            //var memLoccation = staticBaseLocation + staticMemLocation;
+
+            result.Add("@THIS");
+            result.Add("D=M");
+            result.Add("@" + memLocation);
+            result.Add("A=D+A");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+
+            return result;
+            #region Asm push this
+            /*
+             * // Push this 2
+             * @THIS
+             * D=M
+             * @2
+             * A=D+A
+             * D=M
+             * @SP
+             * A=M
+             * M=D
+             * @SP
+             * M=M+1
+             */
+            #endregion
+        }
+
+        private List<string> PushThat(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            //var memLoccation = staticBaseLocation + staticMemLocation;
+
+            result.Add("@THAT");
+            result.Add("D=M");
+            result.Add("@" + memLocation);
+            result.Add("A=D+A");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+
+            return result;
+            #region Asm push that
+            /*
+             * // push that 6 
+             * @THAT
+             * D=M
+             * @6
+             * A=D+A
+             * D=M
+             * @SP
+             * A=M
+             * M=D
+             * @SP
+             * M=M+1
+             */
+            #endregion
+        }
+
+
+        private List<string> template(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int staticMemLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            var memLoccation = staticBaseLocation + staticMemLocation;
+
+            result.Add("");
+
+            return result;
+            #region Asm pop pointer
+            /*
+             */
+            #endregion
+        }
 
     }
 }
