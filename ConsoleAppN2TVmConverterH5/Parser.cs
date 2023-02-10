@@ -128,6 +128,36 @@ namespace ConsoleAppN2TVmConverterH5
                     var pushThat = PushThat(line);
                     output.AddRange(pushThat);
                 }
+                else if (line.Contains("pop") && line.Contains("local"))
+                {
+                    var popLocal = PopLocal(line);
+                    output.AddRange(popLocal);
+                }
+                else if (line.Contains("pop") && line.Contains("argument"))
+                {
+                    var popArgument = PopArgument(line);
+                    output.AddRange(popArgument);
+                }
+                else if (line.Contains("pop") && line.Contains("temp"))
+                {
+                    var popTemp = PopTemp(line);
+                    output.AddRange(popTemp);
+                }
+                else if (line.Contains("push") && line.Contains("local"))
+                {
+                    var pushLocal = PushLocal(line);
+                    output.AddRange(pushLocal);
+                }
+                else if (line.Contains("push") && line.Contains("argument"))
+                {
+                    var pushArgument = PushArgument(line);
+                    output.AddRange(pushArgument);
+                }
+                else if (line.Contains("push") && line.Contains("temp"))
+                {
+                    var pushTemp = PushTemp(line);
+                    output.AddRange(pushTemp);
+                }
                 else
                 {
                     output.Add(line);
@@ -147,7 +177,8 @@ namespace ConsoleAppN2TVmConverterH5
             //var fileContent = fileHandler.ReadVmFile(folderPathToSA + @"\SimpleAdd\SimpleAdd.vm");
             //var fileContent = fileHandler.ReadVmFile(folderPathToSA + @"\StackTest\StackTest.vm");
             //var fileContent = fileHandler.ReadVmFile(folderPathToMA + @"\StaticTest\StaticTest.vm");
-            var fileContent = fileHandler.ReadVmFile(folderPathToMA + @"\PointerTest\PointerTest.vm");
+            //var fileContent = fileHandler.ReadVmFile(folderPathToMA + @"\PointerTest\PointerTest.vm");
+            var fileContent = fileHandler.ReadVmFile(folderPathToMA + @"\BasicTest\BasicTest.vm");
 
             return fileContent;
         }
@@ -823,20 +854,239 @@ namespace ConsoleAppN2TVmConverterH5
             #endregion
         }
 
-
-        private List<string> template(string command)
+        private List<string> PopLocal(string command)
         {
             List<string> result = new List<string>();
             const string stackPointer = "@SP";
 
-            int staticMemLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
-            var memLoccation = staticBaseLocation + staticMemLocation;
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            //var memLoccation = staticBaseLocation + staticMemLocation;
 
-            result.Add("");
+            result.Add("@LCL");
+            result.Add("D=M");
+            result.Add("@" + memLocation);
+            result.Add("D=D+A");
+            result.Add("@R13");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("@R13");
+            result.Add("A=M");
+            result.Add("M=D");
+
 
             return result;
-            #region Asm pop pointer
+            #region Asm pop local
             /*
+             * // Pop local 0
+             * @LCL
+             * D=M
+             * @0
+             * D=D+A
+             * @R13
+             * M=D
+             * @SP
+             * AM=M-1
+             * D=M
+             * @R13
+             * A=M
+             * M=D
+             */
+            #endregion
+        }
+
+        private List<string> PopArgument(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            //var memLoccation = staticBaseLocation + staticMemLocation;
+
+            result.Add("@ARG");
+            result.Add("D=M");
+            result.Add("@" + memLocation);
+            result.Add("D=D+A");
+            result.Add("@R13");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("@R13");
+            result.Add("A=M");
+            result.Add("M=D");
+
+
+            return result;
+            #region Asm pop argument
+            /*
+             * // Pop argument 2
+             * @ARG
+             * D=M
+             * @2
+             * D=D+A
+             * @R13
+             * M=D
+             * @SP
+             * AM=M-1
+             * D=M
+             * @R13
+             * A=M
+             * M=D
+             */
+            #endregion
+        }
+
+        private const int tempBaseLocation = 5;
+        private List<string> PopTemp(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int TempMemLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            var memLoccation = tempBaseLocation + TempMemLocation;
+
+            result.Add("@R5");
+            result.Add("D=M");
+            result.Add("@" + memLoccation);
+            result.Add("D=D+A");
+            result.Add("@R13");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("@R13");
+            result.Add("A=M");
+            result.Add("M=D");
+
+            return result;
+            #region Asm pop temp
+            /*
+             * // Pop temp 6
+             * @R5
+             * D=M
+             * @11
+             * D=D+A
+             * @R13
+             * M=D
+             * @SP
+             * AM=M-1
+             * D=M
+             * @R13
+             * A=M
+             * M=D
+             */
+            #endregion
+        }
+
+        private List<string> PushLocal(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            //var memLoccation = staticBaseLocation + staticMemLocation;
+
+            result.Add("@LCL");
+            result.Add("D=M");
+            result.Add("@" + memLocation);
+            result.Add("A=D+A");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+
+            return result;
+            #region Asm push local
+            /*
+             * // Push local 0
+             * @LCL
+             * D=M
+             * @0
+             * A=D+A
+             * D=M
+             * @SP
+             * A=M
+             * M=D
+             * @SP
+             * M=M+1
+             */
+            #endregion
+        }
+
+        private List<string> PushArgument(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            //var memLoccation = staticBaseLocation + staticMemLocation;
+
+            result.Add("@ARG");
+            result.Add("D=M");
+            result.Add("@" + memLocation);
+            result.Add("A=D+A");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+
+            return result;
+            #region Asm push argument
+            /*
+             * // Push argument 1
+             * @ARG
+             * D=M
+             * @1
+             * A=D+A
+             * D=M
+             * @SP
+             * A=M
+             * M=D
+             * @SP
+             * M=M+1
+             */
+            #endregion
+        }
+
+        private List<string> PushTemp(string command)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            int tempMemLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            var memLoccation = tempBaseLocation + tempMemLocation;
+
+            result.Add("@R5");
+            result.Add("D=M");
+            result.Add("@" + memLoccation);
+            result.Add("A=D+A");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+
+            return result;
+            #region Asm push temp
+            /*
+             * // push temp 6
+             * @R5
+             * D=M
+             * @11
+             * A=D+A
+             * D=M
+             * @SP
+             * A=M
+             * M=D
+             * @SP
+             * M=M+1
              */
             #endregion
         }
