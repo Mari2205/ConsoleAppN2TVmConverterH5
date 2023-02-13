@@ -79,9 +79,17 @@ namespace ConsoleAppN2TVmConverterH5
                 {
                     output.Add(SetLabel(line));
                 }
-                else if (line.Contains(line))
+                else if (line.Contains("goto"))
                 {
                     output.AddRange(Goto(line));
+                }
+                else if (line.Contains("return"))
+                {
+                    output.AddRange(Return());
+                }
+                else if (line.Contains("function"))
+                {
+                    output.AddRange(Function(line));
                 }
                 else
                 {
@@ -208,13 +216,15 @@ namespace ConsoleAppN2TVmConverterH5
         private string[] GetFileOpg8()
         {
             const string basePath = @"C:\Users\uncha\Desktop\nand2tetris\projects\08\";
-            const string folderPathToFC = basePath + @"FuntionCalls\";
+            const string folderPathToFC = basePath + @"FunctionCalls\";
             const string folderPathToPF = basePath + @"ProgramFlow\";
 
             FileHandler fileHandler = new FileHandler();
             //var fileContent = fileHandler.ReadVmFile(folderPathToPF + @"\BasicLoop\BasicLoop.vm");
-            var fileContent = fileHandler.ReadVmFile(folderPathToPF + @"\FibonacciSeries\FibonacciSeries.vm");
-
+            //var fileContent = fileHandler.ReadVmFile(folderPathToPF + @"\FibonacciSeries\FibonacciSeries.vm");
+            var fileContent = fileHandler.ReadVmFile(folderPathToFC + @"\SimpleFunction\SimpleFunction.vm");
+            //var path = @"C:\Users\uncha\Desktop\Opgave 8 - matriale\FunctionCalls\FunctionCalls\SimpleFunction\SimpleFunction.vm";
+            //var fileContent = fileHandler.ReadVmFile(path);
             return fileContent;
         }
 
@@ -292,6 +302,91 @@ namespace ConsoleAppN2TVmConverterH5
 
             //LogicalCommands.needLable = true;
             //LogicalCommands.lable = $"({whereToGoto})";
+            return result;
+        }
+
+        public List<string> Return()
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+
+            result.Add("@LCL");
+            result.Add("D=M");
+            result.Add("@R11");
+            result.Add("M=D");
+            result.Add("@5");
+            result.Add("A=D-A");
+            result.Add("D=M");
+            result.Add("@R12");
+            result.Add("M=D");
+            result.Add("@ARG");
+            result.Add("D=M");
+            result.Add("@0");
+            result.Add("D=D+A");
+            result.Add("@R13");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("@R13");
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add("@ARG");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("M=D+1");
+            result.Add("@R11");
+            result.Add("D=M-1");
+            result.Add("AM=D");
+            result.Add("D=M");
+            result.Add("@THAT");
+            result.Add("M=D");
+            result.Add("@R11");
+            result.Add("D=M-1");
+            result.Add("AM=D");
+            result.Add("D=M");
+            result.Add("@THIS");
+            result.Add("M=D");
+            result.Add("@R11");
+            result.Add("D=M-1");
+            result.Add("AM=D");
+            result.Add("D=M");
+            result.Add("@ARG");
+            result.Add("M=D");
+            result.Add("@R11");
+            result.Add("D=M-1");
+            result.Add("AM=D");
+            result.Add("D=M");
+            result.Add("@LCL");
+            result.Add("M=D");
+            result.Add("@R12");
+            result.Add("A=M");
+            result.Add("0;JMP");
+
+            return result;
+        }
+
+        public List<string> Function(string line)
+        {
+            List<string> result = new List<string>();
+            const string stackPointer = "@SP";
+            var parmCount = Convert.ToInt32(Regex.Replace(line, @"[^\d]", String.Empty));
+            var rmFuncKeyword = line.Replace("function", String.Empty);
+            var functionName = Regex.Replace(rmFuncKeyword, @"\d", String.Empty);
+
+            result.Add($"({functionName})");
+            for (int i = 0; i < parmCount; i++)
+            {
+                result.Add("@" + i);
+                result.Add("D=A");
+                result.Add(stackPointer);
+                result.Add("A=M");
+                result.Add("M=D");
+                result.Add(stackPointer);
+                result.Add("M=M+1");
+            }
+
+
             return result;
         }
 
