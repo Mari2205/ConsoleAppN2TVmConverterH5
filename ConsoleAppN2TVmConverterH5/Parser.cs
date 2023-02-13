@@ -11,7 +11,8 @@ namespace ConsoleAppN2TVmConverterH5
     {
         public void ParseVmFile()
         {
-            var fileContent = GetFile();
+            //var fileContent = GetFileOpg7();
+            var fileContent = GetFileOpg8();
             var cleanFile = Utilities.CleanUpFile(fileContent);
 
             var asmFile = LoopthroughSwitch(cleanFile);
@@ -70,6 +71,18 @@ namespace ConsoleAppN2TVmConverterH5
                 {
                     output.AddRange(LogicalCommands.Not());
                 }
+                else if (line.Contains("if-goto"))
+                {
+                    output.AddRange(IfGoto(line));
+                }
+                else if (line.Contains("label"))
+                {
+                    output.Add(SetLabel(line));
+                }
+                else if (line.Contains(line))
+                {
+                    output.AddRange(Goto(line));
+                }
                 else
                 {
                     output.Add(line);
@@ -118,7 +131,16 @@ namespace ConsoleAppN2TVmConverterH5
             }
             else if (line.Contains("push") && line.Contains("argument"))
             {
-                return ArithmeticCommands.PushArgument(line);
+                //if (LogicalCommands.needLable)
+                //{
+                //    return PushArgumentLabelHandel(line);
+                //}
+                //else
+                //{
+                    return ArithmeticCommands.PushArgument(line);
+
+                //}
+                
             }
             else if (line.Contains("push") && line.Contains("temp"))
             {
@@ -166,7 +188,8 @@ namespace ConsoleAppN2TVmConverterH5
             }
         }
 
-        private string[] GetFile()
+
+        private string[] GetFileOpg7()
         {
             const string basePath = @"C:\Users\uncha\Desktop\nand2tetris\projects\07\";
             const string folderPathToSA = basePath + @"StackArithmetic\";
@@ -182,13 +205,96 @@ namespace ConsoleAppN2TVmConverterH5
             return fileContent;
         }
 
+        private string[] GetFileOpg8()
+        {
+            const string basePath = @"C:\Users\uncha\Desktop\nand2tetris\projects\08\";
+            const string folderPathToFC = basePath + @"FuntionCalls\";
+            const string folderPathToPF = basePath + @"ProgramFlow\";
+
+            FileHandler fileHandler = new FileHandler();
+            //var fileContent = fileHandler.ReadVmFile(folderPathToPF + @"\BasicLoop\BasicLoop.vm");
+            var fileContent = fileHandler.ReadVmFile(folderPathToPF + @"\FibonacciSeries\FibonacciSeries.vm");
+
+            return fileContent;
+        }
+
         private void Writefile(List<string> fileContent)
         {
             const string basePath = @"C:\Users\uncha\Desktop\";
 
             FileHandler fileHandler = new FileHandler();
-            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyStaticTest.asm");
+            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyFibonacciSeries.asm");
         }
+
+
+
+
+        private List<string> IfGoto(string line)
+        {
+            List<string> result = new List<string>();
+            const string stakpointer = "@SP";
+
+            var startIndex = line.Replace("goto", "goto ").IndexOf(" ");
+            var whereToGoto = line.Substring(startIndex);
+
+            result.Add(stakpointer);
+            result.Add("AM=M-1");
+            result.Add("D=M");
+            result.Add("A=A-1");
+            result.Add("@" + whereToGoto);
+            result.Add("D;JNE");
+
+            //LogicalCommands.needLable = true;
+            //LogicalCommands.lable = $"({whereToGoto})";
+            return result;
+        }
+
+        public static List<string> PushArgumentLabelHandel(string command)
+        {
+            List<string> result = new List<string>();
+            int memLocation = Convert.ToInt32(Regex.Replace(command, @"[^\d]", String.Empty));
+            const string stakpointer = "@SP";
+
+            LogicalCommands.needLable = false;
+
+            result.Add(LogicalCommands.lable);
+            result.Add("@ARG");
+            result.Add("D=M");
+            result.Add("@" + memLocation);
+            result.Add("A=D+A");
+            result.Add("D=M");
+            result.Add(stakpointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stakpointer);
+            result.Add("M=M+1");
+
+            return result;
+        }
+
+        public string SetLabel(string line)
+        {
+            var startIndex = line.Replace("label", "label ").IndexOf(" ");
+            var lable = $"({line.Substring(startIndex)})";
+            return lable;
+        }
+
+        public List<string> Goto(string line)
+        {
+            List<string> result = new List<string>();
+            //const string stakpointer = "@SP";
+
+            var startIndex = line.Replace("goto", "goto ").IndexOf(" ");
+            var whereToGoto = line.Substring(startIndex);
+
+            result.Add("@" + whereToGoto);
+            result.Add("0;JMP");
+
+            //LogicalCommands.needLable = true;
+            //LogicalCommands.lable = $"({whereToGoto})";
+            return result;
+        }
+
 
     }
 }
