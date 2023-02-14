@@ -12,7 +12,8 @@ namespace ConsoleAppN2TVmConverterH5
         public void ParseVmFile()
         {
             //var fileContent = GetFileOpg7();
-            var fileContent = GetFileOpg8();
+            //var fileContent = GetFileOpg8();
+            var fileContent = GetFileOpg8MultiFile();
             var cleanFile = Utilities.CleanUpFile(fileContent);
 
             var asmFile = LoopthroughSwitch(cleanFile);
@@ -232,12 +233,31 @@ namespace ConsoleAppN2TVmConverterH5
             return fileContent;
         }
 
+        private string[] GetFileOpg8MultiFile()
+        {
+            const string basePath = @"C:\Users\uncha\Desktop\nand2tetris\projects\08\";
+            const string folderPathToFC = basePath + @"FunctionCalls\";
+
+            FileHandler fileHandler = new FileHandler();
+            List<string> output = new List<string>();
+            List<string> filesToFibonacciElement = new List<string>();
+            filesToFibonacciElement.Add(folderPathToFC + @"FibonacciElement\Main.vm");
+            filesToFibonacciElement.Add(folderPathToFC + @"FibonacciElement\Sys.vm");
+
+            foreach (var file in filesToFibonacciElement)
+            {
+                output.AddRange(fileHandler.ReadVmFile(file));
+            }
+
+            return output.ToArray();
+        }
+
         private void Writefile(List<string> fileContent)
         {
             const string basePath = @"C:\Users\uncha\Desktop\";
 
             FileHandler fileHandler = new FileHandler();
-            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyNestedcall.asm");
+            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyFibonacciElement.asm");
         }
 
 
@@ -250,6 +270,12 @@ namespace ConsoleAppN2TVmConverterH5
 
             var startIndex = line.Replace("goto", "goto ").IndexOf(" ");
             var whereToGoto = line.Substring(startIndex);
+
+            if (LogicalCommands.needLable)
+            {
+                result.Add($"({LogicalCommands.lable})");
+                LogicalCommands.needLable = false;
+            }
 
             result.Add(stakpointer);
             result.Add("AM=M-1");
@@ -405,8 +431,10 @@ namespace ConsoleAppN2TVmConverterH5
             const string stackPointer = "@SP";
             lableCount++;
             var allNums = Convert.ToInt32(Regex.Replace(line, @"[^\d]", String.Empty));
-            var parmCount = (allNums > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
-            var numFormName = (allNums < 1) ? string.Empty : allNums.ToString().Substring(0,2);
+            //var parmCount = (allNums > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
+            //var numFormName = (allNums < 1) ? string.Empty : allNums.ToString().Substring(0,2);
+            var parmCount = (allNums.ToString().Length > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
+            var numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
 
             var rmKeyword = line.Replace("call", String.Empty);
             var calledName = Regex.Replace(rmKeyword, @"\d", String.Empty);
