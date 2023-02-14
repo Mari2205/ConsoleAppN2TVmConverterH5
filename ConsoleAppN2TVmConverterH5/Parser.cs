@@ -244,7 +244,12 @@ namespace ConsoleAppN2TVmConverterH5
             filesToFibonacciElement.Add(folderPathToFC + @"FibonacciElement\Main.vm");
             filesToFibonacciElement.Add(folderPathToFC + @"FibonacciElement\Sys.vm");
 
-            foreach (var file in filesToFibonacciElement)
+            List<string> filesToStaticsTest = new List<string>();
+            filesToStaticsTest.Add(folderPathToFC + @"StaticsTest\Class1.vm");
+            filesToStaticsTest.Add(folderPathToFC + @"StaticsTest\Class2.vm");
+            filesToStaticsTest.Add(folderPathToFC + @"StaticsTest\Sys.vm");
+
+            foreach (var file in filesToStaticsTest)
             {
                 output.AddRange(fileHandler.ReadVmFile(file));
             }
@@ -257,7 +262,7 @@ namespace ConsoleAppN2TVmConverterH5
             const string basePath = @"C:\Users\uncha\Desktop\";
 
             FileHandler fileHandler = new FileHandler();
-            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyFibonacciElement.asm");
+            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyStaticsTest.asm");
         }
 
 
@@ -402,11 +407,37 @@ namespace ConsoleAppN2TVmConverterH5
             const string stackPointer = "@SP";
             //var parmCount = Convert.ToInt32(Regex.Replace(line, @"[^\d]", String.Empty));
             var allNums = Convert.ToInt32(Regex.Replace(line, @"[^\d]", String.Empty));
-            var parmCount = (allNums.ToString().Length > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
-            var numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
-
+            string parmCount;
             var rmFuncKeyword = line.Replace("function", String.Empty);
-            var functionName = Regex.Replace(rmFuncKeyword, @"\d", String.Empty);
+            string functionName = Regex.Replace(rmFuncKeyword, @"\d", String.Empty);
+            string numFormName = string.Empty;
+
+            if (line.Contains("."))
+            {
+                var split = line.Split('.');
+                if (split[0].Any(char.IsDigit))
+                {
+                    parmCount = Regex.Replace(split[1], @"[^\d]", String.Empty);
+                    functionName = rmFuncKeyword.Remove(rmFuncKeyword.Length - 1);
+                }
+                else
+                {
+                    parmCount = (allNums.ToString().Length > 1) ? allNums.ToString().Substring(1) : allNums.ToString();
+                    functionName = Regex.Replace(rmFuncKeyword, @"\d", String.Empty);
+                    numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
+                }
+
+            }
+            else
+            {
+                parmCount = (allNums.ToString().Length > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
+                numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
+            }
+
+            //var numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
+
+            //var rmFuncKeyword = line.Replace("function", String.Empty);
+            //var functionName = Regex.Replace(rmFuncKeyword, @"\d", String.Empty);
 
             result.Add($"({functionName}{numFormName})");
             for (int i = 0; i < Convert.ToInt32(parmCount); i++)
@@ -433,11 +464,36 @@ namespace ConsoleAppN2TVmConverterH5
             var allNums = Convert.ToInt32(Regex.Replace(line, @"[^\d]", String.Empty));
             //var parmCount = (allNums > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
             //var numFormName = (allNums < 1) ? string.Empty : allNums.ToString().Substring(0,2);
-            var parmCount = (allNums.ToString().Length > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
-            var numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
+            //var parmCount = (allNums.ToString().Length > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
+            //var numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
 
             var rmKeyword = line.Replace("call", String.Empty);
-            var calledName = Regex.Replace(rmKeyword, @"\d", String.Empty);
+            //var calledName = Regex.Replace(rmKeyword, @"\d", String.Empty);
+            string calledName = string.Empty;
+            string parmCount;
+            string numFormName = string.Empty;
+
+            if (line.Contains("."))
+            {
+                var split = line.Split('.');
+                if (split[0].Any(char.IsDigit))
+                {
+                    parmCount = Regex.Replace(split[1], @"[^\d]", String.Empty);
+                    calledName = rmKeyword.Remove(rmKeyword.Length - 1);
+                }
+                else
+                {
+                    parmCount = (allNums.ToString().Length > 1) ? allNums.ToString().Substring(1) : allNums.ToString();
+                    calledName = Regex.Replace(rmKeyword, @"\d", String.Empty);
+                    numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
+                }
+
+            }
+            else
+            {
+                parmCount = (allNums.ToString().Length > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
+                numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
+            }
 
             result.Add("@RETURN_LABEL" + lableCount);
             result.Add("D=A");
