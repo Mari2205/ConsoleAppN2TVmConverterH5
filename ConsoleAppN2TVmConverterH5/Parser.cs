@@ -35,7 +35,7 @@ namespace ConsoleAppN2TVmConverterH5
                 {
                     output.AddRange(PopSwitch(line));
                 }
-                else if (line.Contains("add"))
+                else if (line.Contains("add") && !line.Contains("."))
                 {
                     output.AddRange(ArithmeticCommands.Add(line));
                 }
@@ -90,6 +90,10 @@ namespace ConsoleAppN2TVmConverterH5
                 else if (line.Contains("function"))
                 {
                     output.AddRange(Function(line));
+                }
+                else if (line.Contains("call"))
+                {
+                    output.AddRange(Call(line));
                 }
                 else
                 {
@@ -222,9 +226,9 @@ namespace ConsoleAppN2TVmConverterH5
             FileHandler fileHandler = new FileHandler();
             //var fileContent = fileHandler.ReadVmFile(folderPathToPF + @"\BasicLoop\BasicLoop.vm");
             //var fileContent = fileHandler.ReadVmFile(folderPathToPF + @"\FibonacciSeries\FibonacciSeries.vm");
-            var fileContent = fileHandler.ReadVmFile(folderPathToFC + @"\SimpleFunction\SimpleFunction.vm");
-            //var path = @"C:\Users\uncha\Desktop\Opgave 8 - matriale\FunctionCalls\FunctionCalls\SimpleFunction\SimpleFunction.vm";
-            //var fileContent = fileHandler.ReadVmFile(path);
+            //var fileContent = fileHandler.ReadVmFile(folderPathToFC + @"\SimpleFunction\SimpleFunction.vm");
+            var fileContent = fileHandler.ReadVmFile(folderPathToFC + @"NestedCall\Sys.vm");
+
             return fileContent;
         }
 
@@ -233,7 +237,7 @@ namespace ConsoleAppN2TVmConverterH5
             const string basePath = @"C:\Users\uncha\Desktop\";
 
             FileHandler fileHandler = new FileHandler();
-            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyFibonacciSeries.asm");
+            fileHandler.WriteAsmFile(fileContent, basePath + @"\MyNestedcall.asm");
         }
 
 
@@ -370,12 +374,16 @@ namespace ConsoleAppN2TVmConverterH5
         {
             List<string> result = new List<string>();
             const string stackPointer = "@SP";
-            var parmCount = Convert.ToInt32(Regex.Replace(line, @"[^\d]", String.Empty));
+            //var parmCount = Convert.ToInt32(Regex.Replace(line, @"[^\d]", String.Empty));
+            var allNums = Convert.ToInt32(Regex.Replace(line, @"[^\d]", String.Empty));
+            var parmCount = (allNums.ToString().Length > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
+            var numFormName = (allNums.ToString().Length < 2) ? string.Empty : allNums.ToString().Substring(0, 2);
+
             var rmFuncKeyword = line.Replace("function", String.Empty);
             var functionName = Regex.Replace(rmFuncKeyword, @"\d", String.Empty);
 
-            result.Add($"({functionName})");
-            for (int i = 0; i < parmCount; i++)
+            result.Add($"({functionName}{numFormName})");
+            for (int i = 0; i < Convert.ToInt32(parmCount); i++)
             {
                 result.Add("@" + i);
                 result.Add("D=A");
@@ -390,6 +398,71 @@ namespace ConsoleAppN2TVmConverterH5
             return result;
         }
 
+        int lableCount = 0;
+        public List<string> Call (string line)
+        {
+            var result = new List<string>();
+            const string stackPointer = "@SP";
+            lableCount++;
+            var allNums = Convert.ToInt32(Regex.Replace(line, @"[^\d]", String.Empty));
+            var parmCount = (allNums > 1) ? allNums.ToString().Substring(2) : allNums.ToString();
+            var numFormName = (allNums < 1) ? string.Empty : allNums.ToString().Substring(0,2);
 
+            var rmKeyword = line.Replace("call", String.Empty);
+            var calledName = Regex.Replace(rmKeyword, @"\d", String.Empty);
+
+            result.Add("@RETURN_LABEL" + lableCount);
+            result.Add("D=A");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+            result.Add("@LCL");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+            result.Add("@ARG");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+            result.Add("@THIS");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+            result.Add("@THAT");
+            result.Add("D=M");
+            result.Add(stackPointer);
+            result.Add("A=M");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("M=M+1");
+            result.Add(stackPointer);
+            result.Add("D=M");
+            result.Add("@5");
+            result.Add("D=D-A");
+            result.Add("@" + parmCount);
+            result.Add("D=D-A");
+            result.Add("@ARG");
+            result.Add("M=D");
+            result.Add(stackPointer);
+            result.Add("D=M");
+            result.Add("@LCL");
+            result.Add("M=D");
+            result.Add("@" + calledName + numFormName);
+            result.Add("0;JMP");
+            result.Add($"(RETURN_LABEL{lableCount})");
+
+            return result;
+        }
     }
 }
